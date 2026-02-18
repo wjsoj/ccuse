@@ -17,20 +17,12 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            binary: ccuse
-            ext: ''
           - os: macos-latest
             target: x86_64-apple-darwin
-            binary: ccuse
-            ext: ''
           - os: macos-latest
             target: aarch64-apple-darwin
-            binary: ccuse
-            ext: ''
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            binary: ccuse.exe
-            ext: '.exe'
 
     steps:
       - uses: actions/checkout@v4
@@ -45,13 +37,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          cp target/release/${{ matrix.binary }} release/${{ matrix.binary }}${{ matrix.ext }}
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp target/release/ccuse.exe release/ccuse.exe
+          else
+            cp target/release/ccuse release/ccuse
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.binary }}-${{ matrix.target }}
-          path: release/${{ matrix.binary }}${{ matrix.ext }}
+          name: ${{ matrix.target }}
+          path: release/ccuse*
 
   release:
     name: Create Release
@@ -72,5 +68,7 @@ jobs:
           files: artifacts/**/*
           draft: false
           prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

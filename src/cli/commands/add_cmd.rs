@@ -72,10 +72,7 @@ pub fn add_profile() -> Result<()> {
     let original_content = serde_json::to_string_pretty(&template)?;
     fs::write(&settings_path, &original_content)?;
 
-    println!(
-        "\n{} Opening editor to configure profile...",
-        "→".cyan()
-    );
+    println!("\n{} Opening editor to configure profile...", "→".cyan());
     println!("{} {}", "File:".bold(), settings_path.display());
     println!(
         "{} Save and close the editor when done. If you want to cancel, delete all content and save.\n",
@@ -126,7 +123,10 @@ pub fn add_profile() -> Result<()> {
     if content.trim() == original_content.trim() {
         fs::remove_file(&settings_path).ok();
         fs::remove_dir_all(storage.profile_settings_dir(&name)).ok();
-        println!("{}", "No changes made. Profile creation cancelled.".yellow());
+        println!(
+            "{}",
+            "No changes made. Profile creation cancelled.".yellow()
+        );
         return Ok(());
     }
 
@@ -186,7 +186,11 @@ pub fn add_profile() -> Result<()> {
     }
 
     // Add profile name to ccuse.json
-    let mut names = storage.load_profiles()?.iter().map(|p| p.name.clone()).collect::<Vec<_>>();
+    let mut names = storage
+        .load_profiles()?
+        .iter()
+        .map(|p| p.name.clone())
+        .collect::<Vec<_>>();
     names.push(name.clone());
 
     // Save just the names list

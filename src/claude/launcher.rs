@@ -1,6 +1,6 @@
+use crate::config::Profile;
 use crate::config::Storage;
 use crate::error::{Error, Result};
-use crate::config::Profile;
 use std::collections::HashMap;
 use std::env;
 use std::process::{Command, Stdio};
