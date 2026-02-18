@@ -31,23 +31,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build release
-        run: cargo build --release --verbose
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package binary
         shell: bash
         run: |
           mkdir -p release
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cp target/release/ccuse.exe release/ccuse.exe
+            cp target/${{ matrix.target }}/release/ccuse.exe release/ccuse-${{ matrix.target }}.exe
           else
-            cp target/release/ccuse release/ccuse
+            cp target/${{ matrix.target }}/release/ccuse release/ccuse-${{ matrix.target }}
+            chmod +x release/ccuse-${{ matrix.target }}
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: release/ccuse*
+          path: release/ccuse-${{ matrix.target }}*
 
   release:
     name: Create Release
