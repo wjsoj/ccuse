@@ -1,0 +1,15 @@
+/target
+
+# Local development guide prompts
+Agent.md
+
+# Generated completions (installed via ccuse install-completions)
+completions/
+
+# Platform-specific packaging files
+PKGBUILD
+.SRCINFO
+*.tar.gz
+
+# Build artifacts
+.aur-build/
