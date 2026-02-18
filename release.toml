@@ -1,0 +1,3 @@
+# Disable publishing to crates.io
+push = false
+publish = false
