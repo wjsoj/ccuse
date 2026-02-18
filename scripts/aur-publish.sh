@@ -56,10 +56,12 @@ pkgver=${version}
 pkgrel=1
 pkgdesc="A CLI tool to manage and switch between Claude Code profiles"
 arch=('x86_64' 'aarch64')
+provides=('ccuse-bin')
+conflicts=('ccuse-bin')
 url="https://github.com/wjsoj/ccuse"
 license=('MIT')
 depends=('gcc-libs')
-makedepends=('cargo')
+makedepends=('rust')
 source=("\$pkgname-\$pkgver.tar.gz::https://github.com/wjsoj/ccuse/archive/refs/tags/v\$pkgver.tar.gz")
 sha256sums=('${sha256}')
 
@@ -103,13 +105,12 @@ setup_aur_repo() {
     info "准备 AUR 仓库 ..."
     rm -rf "$AUR_DIR"
 
-    git clone "$AUR_REMOTE" "$AUR_DIR" 2>/dev/null || {
-        info "AUR 仓库不存在，创建新仓库 ..."
-        mkdir -p "$AUR_DIR"
-        cd "$AUR_DIR"
-        git init
-        git remote add origin "$AUR_REMOTE"
+    info "克隆 AUR 仓库 (首次会显示 empty repository 警告，这是正常的)..."
+    info "URL: $AUR_REMOTE"
+    git clone "$AUR_REMOTE" "$AUR_DIR" || {
+        error "无法克隆 AUR 仓库，请确认 SSH 密钥已配置或包已存在"
     }
+    info "AUR 仓库克隆完成"
 }
 
 # 提交并推送
@@ -117,7 +118,15 @@ commit_and_push() {
     local version="$1"
 
     cd "$AUR_DIR"
+
+    # 添加所有需要的文件
     git add PKGBUILD .SRCINFO
+
+    # 复制 LICENSE 文件到 AUR 目录
+    if [ -f "$PROJECT_DIR/LICENSE" ]; then
+        cp "$PROJECT_DIR/LICENSE" "$AUR_DIR/"
+        git add LICENSE
+    fi
 
     if git diff --cached --quiet; then
         warn "没有变更需要提交"
@@ -126,8 +135,16 @@ commit_and_push() {
 
     git commit -m "Update to v${version}"
 
-    info "推送到 AUR ..."
-    git push origin master
+    # 确保 branch 名为 master（AUR 只接受 master）
+    local current_branch=$(git branch --show-current)
+    if [ "$current_branch" != "master" ]; then
+        info "重命名分支 $current_branch 为 master..."
+        git branch -m master
+    fi
+
+    info "推送到 AUR (可能需要输入 SSH 密钥)..."
+    git push origin master || error "推送失败，请检查 SSH 配置和网络连接"
+    info "推送成功"
 }
 
 # 主流程
@@ -155,7 +172,8 @@ main() {
     info "获取 GitHub release 的 sha256 ..."
     local tarball_url="https://github.com/wjsoj/ccuse/archive/refs/tags/v${VERSION}.tar.gz"
     local tmpfile=$(mktemp)
-    curl -sL "$tarball_url" -o "$tmpfile"
+    info "下载 tarball: $tarball_url"
+    curl -L "$tarball_url" -o "$tmpfile" || error "下载失败，请检查网络和 tag 是否存在"
     SHA256=$(calc_sha256 "$tmpfile")
     rm -f "$tmpfile"
     info "SHA256: $SHA256"
@@ -173,7 +191,11 @@ main() {
     # 提交并推送
     commit_and_push "$VERSION"
 
-    info "完成! ccuse v${VERSION} 已发布到 AUR"
+    echo ""
+    echo -e "${GREEN}======================================${NC}"
+    echo -e "${GREEN}✓ 完成! ccuse v${VERSION} 已发布到 AUR${NC}"
+    echo -e "${GREEN}======================================${NC}"
+    echo ""
 }
 
 main "$@"

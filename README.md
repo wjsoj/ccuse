@@ -16,6 +16,12 @@ A CLI tool to manage and switch between different Claude Code configurations (pr
 ### From AUR (Arch Linux)
 
 ```bash
+# Pre-built binary (recommended - faster, no build dependencies)
+yay -S ccuse-bin
+# or
+paru -S ccuse-bin
+
+# Build from source
 yay -S ccuse
 # or
 paru -S ccuse
