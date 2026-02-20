@@ -23,7 +23,7 @@ pub enum Commands {
         bypass: bool,
 
         /// Additional arguments to pass to Claude Code
-        #[arg(last = true, allow_hyphen_values = true)]
+        #[arg(allow_hyphen_values = true)]
         args: Vec<String>,
     },
 

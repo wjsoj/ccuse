@@ -57,6 +57,7 @@ url="https://github.com/wjsoj/ccuse"
 license=('MIT')
 provides=('ccuse')
 conflicts=('ccuse')
+options=('!debug')
 source_x86_64=("ccuse-\$pkgver::https://github.com/wjsoj/ccuse/releases/download/v\$pkgver/ccuse-x86_64-unknown-linux-gnu")
 sha256sums_x86_64=('${linux_sha256}')
 
