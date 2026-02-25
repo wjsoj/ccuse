@@ -34,6 +34,9 @@ pub enum Error {
 
     #[error("Inquire error: {0}")]
     InquireError(#[from] inquire::InquireError),
+
+    #[error("Failed to run ccusage: {0}")]
+    CcusageError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,6 +1,6 @@
 use ccuse::cli::commands::{
     add_profile, list_profiles, remove_all_profiles, remove_profile, rename_profile,
-    update_profiles, use_profile,
+    run_ccusage, update_profiles, use_profile,
 };
 use ccuse::cli::{Args, Commands, CompletionInstaller};
 use ccuse::config::Storage;
@@ -58,6 +58,8 @@ fn main() {
             }
             Ok(())
         }
+
+        Commands::Usage { args } => run_ccusage(&args),
     };
 
     if let Err(e) = result {

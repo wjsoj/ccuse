@@ -60,4 +60,11 @@ pub enum Commands {
 
     /// Install shell completions interactively
     Completions,
+
+    /// Analyze Claude Code token usage with ccusage
+    Usage {
+        /// Additional arguments to pass to ccusage
+        #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
+        args: Vec<String>,
+    },
 }
