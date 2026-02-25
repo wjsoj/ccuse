@@ -1,6 +1,6 @@
 use ccuse::cli::commands::{
-    add_profile, list_profiles, remove_all_profiles, remove_profile, rename_profile,
-    run_ccusage, update_profiles, use_profile,
+    add_profile, list_profiles, remove_all_profiles, remove_profile, rename_profile, run_ccusage,
+    update_profiles, use_profile,
 };
 use ccuse::cli::{Args, Commands, CompletionInstaller};
 use ccuse::config::Storage;
