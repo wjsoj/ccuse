@@ -33,7 +33,7 @@ pub fn update_profiles() -> Result<()> {
     // Separate CC-Switch profiles and manual profiles
     let manual_profiles: Vec<Profile> = existing_profiles
         .iter()
-        .filter(|p| p.source == ProfileSource::Manual)
+        .filter(|p| p.source.as_ref() == Some(&ProfileSource::Manual))
         .cloned()
         .collect();
 

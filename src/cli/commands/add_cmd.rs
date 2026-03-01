@@ -55,15 +55,14 @@ pub fn add_profile() -> Result<()> {
         return Err(crate::error::Error::ProfileAlreadyExists(name));
     }
 
-    // Create template JSON with only env fields
+    // Create minimal template - only requires token and base_url
     let template = json!({
+        "name": name,
+        "display_name": name,
+        "source": "manual",
         "env": {
-            "ANTHROPIC_AUTH_TOKEN": "sk-apikey",
-            "ANTHROPIC_BASE_URL": "https://yourapi",
-            "ANTHROPIC_MODEL": "",
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL": "",
-            "ANTHROPIC_DEFAULT_SONNET_MODEL": "",
-            "ANTHROPIC_DEFAULT_OPUS_MODEL": ""
+            "ANTHROPIC_AUTH_TOKEN": "",
+            "ANTHROPIC_BASE_URL": ""
         }
     });
 
@@ -176,26 +175,38 @@ pub fn add_profile() -> Result<()> {
         crate::error::Error::ConfigError(format!("Invalid JSON: {e}"))
     })?;
 
-    // Validate that at least some env vars are set
-    if profile.env.is_empty() {
+    // Validate that both token and base_url are provided
+    let has_token = profile
+        .env
+        .get("ANTHROPIC_AUTH_TOKEN")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false);
+    let has_base_url = profile
+        .env
+        .get("ANTHROPIC_BASE_URL")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false);
+
+    if !has_token {
         fs::remove_file(&settings_path).ok();
         fs::remove_dir_all(storage.profile_settings_dir(&name)).ok();
         return Err(crate::error::Error::ConfigError(
-            "No environment variables configured".into(),
+            "ANTHROPIC_AUTH_TOKEN is required".into(),
         ));
     }
 
-    // Add profile name to ccuse.json
-    let mut names = storage
-        .load_profiles()?
-        .iter()
-        .map(|p| p.name.clone())
-        .collect::<Vec<_>>();
-    names.push(name.clone());
+    if !has_base_url {
+        fs::remove_file(&settings_path).ok();
+        fs::remove_dir_all(storage.profile_settings_dir(&name)).ok();
+        return Err(crate::error::Error::ConfigError(
+            "ANTHROPIC_BASE_URL is required".into(),
+        ));
+    }
 
-    // Save just the names list
-    let ccuse_path = storage.config_dir().join("ccuse.json");
-    fs::write(ccuse_path, serde_json::to_string_pretty(&names)?)?;
+    // Save profile (the profile is already saved to settings.json earlier,
+    // but we need to ensure it's properly saved with all fields)
+    let settings_path = storage.ensure_profile_settings_dir(&name)?;
+    fs::write(&settings_path, serde_json::to_string_pretty(&profile)?)?;
 
     println!(
         "{}",

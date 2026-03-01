@@ -111,7 +111,7 @@ impl CcSwitchDb {
             always_thinking_enabled: config.always_thinking_enabled,
             api_timeout_ms: config.api_timeout_ms,
             category: None,
-            source: ProfileSource::CcSwitch,
+            source: Some(ProfileSource::CcSwitch),
             created_at: created_at_dt,
             updated_at: created_at_dt,
         })

@@ -32,10 +32,6 @@ impl Storage {
         &self.config_dir
     }
 
-    fn profiles_path(&self) -> PathBuf {
-        self.config_dir.join("ccuse.json")
-    }
-
     /// Get the settings directory for a specific profile
     /// Path: ~/.config/ccuse/<profile-name>/
     #[must_use]
@@ -62,33 +58,6 @@ impl Storage {
             fs::create_dir_all(&dir)?;
         }
         Ok(self.profile_settings_path(profile_name))
-    }
-
-    /// Load profile names from ccuse.json
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if ccuse.json cannot be read or deserialized.
-    pub fn load_profile_names(&self) -> Result<Vec<String>> {
-        let path = self.profiles_path();
-        if !path.exists() {
-            return Ok(Vec::new());
-        }
-        let content = fs::read_to_string(&path)?;
-        let names: Vec<String> = serde_json::from_str(&content)?;
-        Ok(names)
-    }
-
-    /// Save profile names to ccuse.json
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if profile names cannot be serialized or written to file.
-    fn save_profile_names(&self, names: &[String]) -> Result<()> {
-        let path = self.profiles_path();
-        let content = serde_json::to_string_pretty(names)?;
-        fs::write(path, content)?;
-        Ok(())
     }
 
     /// Load a single profile from its settings.json
@@ -118,20 +87,42 @@ impl Storage {
         Ok(())
     }
 
-    /// Load all profiles from storage.
+    /// Load all profiles from storage by scanning config directory.
     ///
     /// # Errors
     ///
     /// Returns an error if profiles cannot be loaded.
     pub fn load_profiles(&self) -> Result<Vec<Profile>> {
-        let names = self.load_profile_names()?;
         let mut profiles = Vec::new();
 
-        for name in names {
-            match self.load_profile_from_file(&name) {
-                Ok(profile) => profiles.push(profile),
-                Err(e) => {
-                    eprintln!("Warning: Failed to load profile '{}': {}", name, e);
+        // Scan config directory for profile directories
+        if !self.config_dir.exists() {
+            return Ok(profiles);
+        }
+
+        for entry in fs::read_dir(&self.config_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if !path.is_dir() {
+                continue;
+            }
+
+            let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+            // Skip hidden directories
+            if dir_name.starts_with('.') {
+                continue;
+            }
+
+            // Try to load profile from settings.json
+            let settings_path = path.join("settings.json");
+            if settings_path.exists() {
+                match self.load_profile_from_file(dir_name) {
+                    Ok(profile) => profiles.push(profile),
+                    Err(e) => {
+                        eprintln!("Warning: Failed to load profile '{}': {}", dir_name, e);
+                    }
                 }
             }
         }
@@ -150,10 +141,6 @@ impl Storage {
             self.save_profile_to_file(profile)?;
         }
 
-        // Save profile names to ccuse.json
-        let names: Vec<String> = profiles.iter().map(|p| p.name.clone()).collect();
-        self.save_profile_names(&names)?;
-
         Ok(())
     }
 
@@ -163,14 +150,11 @@ impl Storage {
     ///
     /// Returns an error if profile cannot be loaded.
     pub fn get_profile(&self, name: &str) -> Result<Option<Profile>> {
-        let names = self.load_profile_names()?;
-        if !names.contains(&name.to_string()) {
-            return Ok(None);
-        }
-
+        // Try to load profile directly from settings.json
         match self.load_profile_from_file(name) {
             Ok(profile) => Ok(Some(profile)),
-            Err(_) => Ok(None),
+            Err(Error::ProfileNotFound(_)) => Ok(None),
+            Err(e) => Err(e),
         }
     }
 
@@ -180,18 +164,13 @@ impl Storage {
     ///
     /// Returns an error if profile already exists or cannot be saved.
     pub fn add_profile(&self, profile: Profile) -> Result<()> {
-        let mut names = self.load_profile_names()?;
-
-        if names.contains(&profile.name) {
+        // Check if profile already exists by trying to load it
+        if self.get_profile(&profile.name)?.is_some() {
             return Err(Error::ProfileAlreadyExists(profile.name));
         }
 
         // Save profile to its settings.json
         self.save_profile_to_file(&profile)?;
-
-        // Add name to ccuse.json
-        names.push(profile.name.clone());
-        self.save_profile_names(&names)?;
 
         Ok(())
     }
@@ -202,9 +181,8 @@ impl Storage {
     ///
     /// Returns an error if profile does not exist or cannot be saved.
     pub fn update_profile(&self, profile: Profile) -> Result<()> {
-        let names = self.load_profile_names()?;
-
-        if !names.contains(&profile.name) {
+        // Check if profile exists
+        if self.get_profile(&profile.name)?.is_none() {
             return Err(Error::ProfileNotFound(profile.name));
         }
 
@@ -220,11 +198,8 @@ impl Storage {
     ///
     /// Returns an error if profile does not exist or cannot be removed.
     pub fn remove_profile(&self, name: &str) -> Result<()> {
-        let mut names = self.load_profile_names()?;
-        let initial_len = names.len();
-        names.retain(|n| n != name);
-
-        if names.len() == initial_len {
+        // Check if profile exists
+        if self.get_profile(name)?.is_none() {
             return Err(Error::ProfileNotFound(name.into()));
         }
 
@@ -233,9 +208,6 @@ impl Storage {
         if profile_dir.exists() {
             fs::remove_dir_all(&profile_dir)?;
         }
-
-        // Update ccuse.json
-        self.save_profile_names(&names)?;
 
         Ok(())
     }
@@ -246,20 +218,15 @@ impl Storage {
     ///
     /// Returns an error if profiles cannot be removed.
     pub fn remove_all_profiles(&self) -> Result<()> {
-        let names = self.load_profile_names()?;
+        // Load all profiles first
+        let profiles = self.load_profiles()?;
 
         // Remove all profile directories
-        for name in names {
-            let profile_dir = self.profile_settings_dir(&name);
+        for profile in profiles {
+            let profile_dir = self.profile_settings_dir(&profile.name);
             if profile_dir.exists() {
                 fs::remove_dir_all(&profile_dir)?;
             }
-        }
-
-        // Remove ccuse.json
-        let profiles_path = self.profiles_path();
-        if profiles_path.exists() {
-            fs::remove_file(&profiles_path)?;
         }
 
         Ok(())

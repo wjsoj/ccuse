@@ -40,19 +40,15 @@ pub fn rename_profile(old_name: &str, new_name: &str) -> Result<()> {
         profile.display_name = Some(new_name.to_string());
     }
 
-    // Save updated profile
-    let settings_path = storage.profile_settings_path(new_name);
+    // Save updated profile to new location
+    let settings_path = storage.ensure_profile_settings_dir(new_name)?;
     fs::write(&settings_path, serde_json::to_string_pretty(&profile)?)?;
 
-    // Update ccuse.json
-    let mut names = storage.load_profile_names()?;
-
-    if let Some(idx) = names.iter().position(|n| n == old_name) {
-        names[idx] = new_name.to_string();
+    // Remove old profile directory
+    let old_dir = storage.profile_settings_dir(old_name);
+    if old_dir.exists() {
+        fs::remove_dir_all(&old_dir)?;
     }
-
-    let ccuse_path = storage.config_dir().join("ccuse.json");
-    fs::write(ccuse_path, serde_json::to_string_pretty(&names)?)?;
 
     println!(
         "{}",

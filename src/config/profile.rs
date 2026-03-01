@@ -12,7 +12,8 @@ pub struct Profile {
     pub always_thinking_enabled: Option<bool>,
     pub api_timeout_ms: Option<u64>,
     pub category: Option<String>,
-    pub source: ProfileSource,
+    #[serde(default)]
+    pub source: Option<ProfileSource>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -35,7 +36,7 @@ impl Default for Profile {
             always_thinking_enabled: None,
             api_timeout_ms: None,
             category: None,
-            source: ProfileSource::Manual,
+            source: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

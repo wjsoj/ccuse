@@ -20,13 +20,19 @@ pub fn list_profiles() -> Result<()> {
     println!();
 
     for profile in &profiles {
-        let source_str = match profile.source {
-            crate::config::ProfileSource::CcSwitch => "ccswitch".cyan(),
-            crate::config::ProfileSource::Manual => "manual".blue(),
+        let name = profile.display_name.as_ref().unwrap_or(&profile.name);
+
+        // Only show source if explicitly set
+        let source_str = match &profile.source {
+            Some(crate::config::ProfileSource::CcSwitch) => Some("ccswitch".cyan()),
+            Some(crate::config::ProfileSource::Manual) => Some("manual".blue()),
+            None => None,
         };
 
-        let name = profile.display_name.as_ref().unwrap_or(&profile.name);
-        println!("  {} ({})", name.green(), source_str);
+        match source_str {
+            Some(colored) => println!("  {} ({})", name.green(), colored),
+            None => println!("  {}", name.green()),
+        }
 
         if !profile.env.is_empty() {
             let env_count = profile.env.len();
