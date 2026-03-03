@@ -81,4 +81,14 @@ pub enum Commands {
         #[arg(allow_hyphen_values = true)]
         args: Vec<String>,
     },
+
+    /// Load a profile's settings to replace default Claude settings
+    Load {
+        /// Profile name to load
+        name: String,
+
+        /// Backup the existing settings.json before loading
+        #[arg(short = 'b', long = "backup")]
+        backup: bool,
+    },
 }
