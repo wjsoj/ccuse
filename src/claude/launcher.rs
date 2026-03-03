@@ -99,4 +99,95 @@ impl Launcher {
 
         Ok(())
     }
+
+    /// Find the Happy executable in the system.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if Happy executable cannot be found in PATH or `HAPPY_PATH`.
+    pub fn find_happy_executable() -> Result<String> {
+        // Try common locations
+        let candidates = vec!["happy"];
+
+        for candidate in &candidates {
+            if which(candidate).is_ok() {
+                return Ok((*candidate).to_string());
+            }
+        }
+
+        // Try environment variable
+        if let Ok(happy_path) = env::var("HAPPY_PATH") {
+            if std::path::Path::new(&happy_path).exists() {
+                return Ok(happy_path);
+            }
+        }
+
+        Err(Error::ClaudeNotFound)
+    }
+
+    /// Launch Happy with the specified profile.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if Happy cannot be found, settings cannot be found, or the process fails to launch.
+    pub fn launch_happy(profile: &Profile, bypass: bool, args: &[String]) -> Result<()> {
+        let happy_cmd = Self::find_happy_executable()?;
+
+        // Create storage to get profile settings path
+        let storage = Storage::new()?;
+
+        // Get profile-specific settings.json path (should already exist)
+        let settings_path = storage.profile_settings_path(&profile.name);
+
+        if !settings_path.exists() {
+            return Err(Error::ConfigError(format!(
+                "Settings file not found for profile '{}': {}",
+                profile.name,
+                settings_path.display()
+            )));
+        }
+
+        // Build environment - inherit from parent, then override with profile env vars
+        let mut env_vars: HashMap<String, String> = env::vars().collect();
+
+        // Remove CLAUDECODE to allow launching Claude inside another Claude session
+        env_vars.remove("CLAUDECODE");
+
+        // Override with profile env vars (these contain the provider configuration)
+        for (key, value) in &profile.env {
+            env_vars.insert(key.clone(), value.clone());
+        }
+
+        // Build command arguments
+        let mut happy_args = Vec::new();
+
+        // Add --settings flag to use profile-specific settings
+        happy_args.push("--settings".to_string());
+        happy_args.push(settings_path.to_string_lossy().to_string());
+
+        // Add bypass flag if requested
+        if bypass {
+            happy_args.push("--dangerously-skip-permissions".to_string());
+        }
+
+        // Add user-provided arguments
+        happy_args.extend(args.iter().cloned());
+
+        // Launch process
+        let mut cmd = Command::new(&happy_cmd);
+        cmd.args(&happy_args)
+            .envs(&env_vars)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit());
+
+        let mut child = cmd.spawn().map_err(|e| Error::LaunchError(e.to_string()))?;
+
+        // Wait for the child to complete so ccuse keeps the terminal alive
+        child
+            .wait()
+            .map_err(|e| Error::LaunchError(e.to_string()))?;
+
+        Ok(())
+    }
 }

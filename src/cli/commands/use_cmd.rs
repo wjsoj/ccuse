@@ -22,3 +22,24 @@ pub fn use_profile(name: &str, bypass: bool, args: &[String]) -> Result<()> {
 
     Ok(())
 }
+
+/// Use a profile to launch Happy.
+///
+/// # Errors
+///
+/// Returns an error if profile does not exist or Happy fails to launch.
+pub fn usehappy_profile(name: &str, bypass: bool, args: &[String]) -> Result<()> {
+    let storage = Storage::new()?;
+
+    let profile = storage
+        .get_profile(name)?
+        .ok_or_else(|| crate::error::Error::ProfileNotFound(name.into()))?;
+
+    println!(
+        "Using profile (Happy): {}",
+        profile.display_name.as_ref().unwrap_or(&profile.name)
+    );
+    Launcher::launch_happy(&profile, bypass, args)?;
+
+    Ok(())
+}

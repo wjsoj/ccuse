@@ -67,4 +67,18 @@ pub enum Commands {
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
+
+    /// Use a profile to launch Happy
+    Usehappy {
+        /// Profile name to use
+        name: String,
+
+        /// Skip permissions check (equivalent to --dangerously-skip-permissions)
+        #[arg(short = 'b', long = "bypass", global = false)]
+        bypass: bool,
+
+        /// Additional arguments to pass to Happy
+        #[arg(allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
 }

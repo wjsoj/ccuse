@@ -12,4 +12,4 @@ pub use remove_cmd::{remove_all_profiles, remove_profile};
 pub use rename_cmd::rename_profile;
 pub use update_cmd::update_profiles;
 pub use usage_cmd::run_ccusage;
-pub use use_cmd::use_profile;
+pub use use_cmd::{use_profile, usehappy_profile};
