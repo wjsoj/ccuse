@@ -1,6 +1,6 @@
 use ccuse::cli::commands::{
-    add_profile, list_profiles, load_profile, remove_all_profiles, remove_profile, rename_profile,
-    run_ccusage, update_profiles, use_profile, usehappy_profile,
+    add_profile, edit_profile, list_profiles, load_profile, remove_all_profiles, remove_profile,
+    rename_profile, run_ccusage, update_profiles, use_profile, usehappy_profile,
 };
 use ccuse::cli::{Args, Commands, CompletionInstaller};
 use ccuse::config::Storage;
@@ -64,6 +64,8 @@ fn main() {
         Commands::Usehappy { name, bypass, args } => usehappy_profile(&name, bypass, &args),
 
         Commands::Load { name, backup } => load_profile(&name, backup),
+
+        Commands::Edit { name } => edit_profile(&name),
     };
 
     if let Err(e) = result {

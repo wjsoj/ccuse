@@ -1,11 +1,9 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Profile {
     pub name: String,
-    pub display_name: Option<String>,
     pub env: HashMap<String, String>,
     pub permissions: Permissions,
     pub enabled_plugins: Option<HashMap<String, bool>>,
@@ -14,8 +12,6 @@ pub struct Profile {
     pub category: Option<String>,
     #[serde(default)]
     pub source: Option<ProfileSource>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -23,24 +19,6 @@ pub struct Profile {
 pub enum ProfileSource {
     CcSwitch,
     Manual,
-}
-
-impl Default for Profile {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            display_name: None,
-            env: HashMap::new(),
-            permissions: Permissions::default(),
-            enabled_plugins: None,
-            always_thinking_enabled: None,
-            api_timeout_ms: None,
-            category: None,
-            source: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

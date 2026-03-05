@@ -20,8 +20,6 @@ pub fn list_profiles() -> Result<()> {
     println!();
 
     for profile in &profiles {
-        let name = profile.display_name.as_ref().unwrap_or(&profile.name);
-
         // Only show source if explicitly set
         let source_str = match &profile.source {
             Some(crate::config::ProfileSource::CcSwitch) => Some("ccswitch".cyan()),
@@ -30,8 +28,8 @@ pub fn list_profiles() -> Result<()> {
         };
 
         match source_str {
-            Some(colored) => println!("  {} ({})", name.green(), colored),
-            None => println!("  {}", name.green()),
+            Some(colored) => println!("  {} ({})", profile.name.green(), colored),
+            None => println!("  {}", profile.name.green()),
         }
 
         if !profile.env.is_empty() {

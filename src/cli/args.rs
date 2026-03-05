@@ -91,4 +91,10 @@ pub enum Commands {
         #[arg(short = 'b', long = "backup")]
         backup: bool,
     },
+
+    /// Edit a profile's configuration file
+    Edit {
+        /// Profile name to edit
+        name: String,
+    },
 }

@@ -36,9 +36,6 @@ pub fn rename_profile(old_name: &str, new_name: &str) -> Result<()> {
 
     // Update profile name in settings.json
     profile.name = new_name.to_string();
-    if profile.display_name.is_some() {
-        profile.display_name = Some(new_name.to_string());
-    }
 
     // Save updated profile to new location
     let settings_path = storage.ensure_profile_settings_dir(new_name)?;

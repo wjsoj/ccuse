@@ -14,10 +14,7 @@ pub fn use_profile(name: &str, bypass: bool, args: &[String]) -> Result<()> {
         .get_profile(name)?
         .ok_or_else(|| crate::error::Error::ProfileNotFound(name.into()))?;
 
-    println!(
-        "Using profile: {}",
-        profile.display_name.as_ref().unwrap_or(&profile.name)
-    );
+    println!("Using profile: {}", profile.name);
     Launcher::launch(&profile, bypass, args)?;
 
     Ok(())
@@ -35,10 +32,7 @@ pub fn usehappy_profile(name: &str, bypass: bool, args: &[String]) -> Result<()>
         .get_profile(name)?
         .ok_or_else(|| crate::error::Error::ProfileNotFound(name.into()))?;
 
-    println!(
-        "Using profile (Happy): {}",
-        profile.display_name.as_ref().unwrap_or(&profile.name)
-    );
+    println!("Using profile (Happy): {}", profile.name);
     Launcher::launch_happy(&profile, bypass, args)?;
 
     Ok(())

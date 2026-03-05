@@ -1,6 +1,5 @@
 use crate::config::{Profile, Storage};
 use crate::error::Result;
-use chrono::Utc;
 use colored::Colorize;
 use inquire::Text;
 use serde_json::json;
@@ -58,7 +57,6 @@ pub fn add_profile() -> Result<()> {
     // Create minimal template - only requires token and base_url
     let template = json!({
         "name": name,
-        "display_name": name,
         "source": "manual",
         "env": {
             "ANTHROPIC_AUTH_TOKEN": "",
@@ -129,47 +127,66 @@ pub fn add_profile() -> Result<()> {
         return Ok(());
     }
 
-    // Parse the edited content and merge with defaults
+    // Parse the edited content
     let user_json: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
         fs::remove_file(&settings_path).ok();
         fs::remove_dir_all(storage.profile_settings_dir(&name)).ok();
         crate::error::Error::ConfigError(format!("Invalid JSON: {e}"))
     })?;
 
-    // Create default values for missing fields
-    let default_json = json!({
-        "name": name,
-        "display_name": null,
-        "permissions": {
-            "enabled": null,
-            "mcp": null,
-            "command": null
-        },
-        "enabled_plugins": null,
-        "always_thinking_enabled": null,
-        "api_timeout_ms": null,
-        "category": null,
-        "source": "manual",
-        "created_at": Utc::now(),
-        "updated_at": Utc::now()
-    });
+    // Build merged JSON - only include fields that are explicitly set
+    let mut merged_json = serde_json::Map::new();
+    merged_json.insert("name".to_string(), json!(name));
 
-    // Merge: user values override defaults
-    let merged_json = json!({
-        "name": name,
-        "display_name": user_json.get("display_name").or_else(|| default_json.get("display_name")),
-        "env": user_json.get("env").unwrap_or(&json!({})),
-        "permissions": user_json.get("permissions").unwrap_or_else(|| default_json.get("permissions").unwrap()),
-        "enabled_plugins": user_json.get("enabled_plugins").or_else(|| default_json.get("enabled_plugins")),
-        "always_thinking_enabled": user_json.get("always_thinking_enabled").or_else(|| default_json.get("always_thinking_enabled")),
-        "api_timeout_ms": user_json.get("api_timeout_ms").or_else(|| default_json.get("api_timeout_ms")),
-        "category": user_json.get("category").or_else(|| default_json.get("category")),
-        "source": user_json.get("source").unwrap_or_else(|| default_json.get("source").unwrap()),
-        "created_at": user_json.get("created_at").unwrap_or_else(|| default_json.get("created_at").unwrap()),
-        "updated_at": Utc::now()
-    });
+    // Always include env
+    if let Some(env) = user_json.get("env") {
+        merged_json.insert("env".to_string(), env.clone());
+    } else {
+        merged_json.insert("env".to_string(), json!({}));
+    }
 
-    let profile: Profile = serde_json::from_value(merged_json).map_err(|e| {
+    // Only include optional fields if they are present and not null
+    if let Some(permissions) = user_json.get("permissions") {
+        if !permissions.is_null() {
+            merged_json.insert("permissions".to_string(), permissions.clone());
+        }
+    }
+
+    if let Some(enabled_plugins) = user_json.get("enabled_plugins") {
+        if !enabled_plugins.is_null() {
+            merged_json.insert("enabled_plugins".to_string(), enabled_plugins.clone());
+        }
+    }
+
+    if let Some(always_thinking) = user_json.get("always_thinking_enabled") {
+        if !always_thinking.is_null() {
+            merged_json.insert(
+                "always_thinking_enabled".to_string(),
+                always_thinking.clone(),
+            );
+        }
+    }
+
+    if let Some(timeout) = user_json.get("api_timeout_ms") {
+        if !timeout.is_null() {
+            merged_json.insert("api_timeout_ms".to_string(), timeout.clone());
+        }
+    }
+
+    if let Some(category) = user_json.get("category") {
+        if !category.is_null() {
+            merged_json.insert("category".to_string(), category.clone());
+        }
+    }
+
+    // Include source
+    if let Some(source) = user_json.get("source") {
+        merged_json.insert("source".to_string(), source.clone());
+    } else {
+        merged_json.insert("source".to_string(), json!("manual"));
+    }
+
+    let profile: Profile = serde_json::from_value(json!(merged_json)).map_err(|e| {
         fs::remove_file(&settings_path).ok();
         fs::remove_dir_all(storage.profile_settings_dir(&name)).ok();
         crate::error::Error::ConfigError(format!("Invalid JSON: {e}"))

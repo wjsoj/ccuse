@@ -52,13 +52,11 @@ pub fn update_profiles() -> Result<()> {
             // Update existing - also replace spaces in name
             let mut updated_profile = new_profile;
             updated_profile.name = name_with_underscores.clone();
-            updated_profile.display_name = Some(name_with_underscores);
             updated_profiles[idx] = updated_profile;
         } else {
             // Add new with underscores instead of spaces
             let mut updated_profile = new_profile;
             updated_profile.name = name_with_underscores.clone();
-            updated_profile.display_name = Some(name_with_underscores);
             updated_profiles.push(updated_profile);
         }
     }

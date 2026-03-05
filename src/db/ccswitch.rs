@@ -1,6 +1,5 @@
 use crate::config::{Profile, ProfileSource};
 use crate::error::{Error, Result};
-use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -46,7 +45,7 @@ impl CcSwitchDb {
         let conn = Connection::open(&self.db_path)?;
 
         let mut stmt = conn.prepare(
-            "SELECT id, name, settings_config, created_at
+            "SELECT id, name, settings_config
              FROM providers
              WHERE app_type = 'claude'",
         )?;
@@ -56,25 +55,19 @@ impl CcSwitchDb {
                 let id: String = row.get(0)?;
                 let name: String = row.get(1)?;
                 let settings_config: String = row.get(2)?;
-                let created_at: i64 = row.get(3)?;
 
-                Ok((id, name, settings_config, created_at))
+                Ok((id, name, settings_config))
             })?
             .filter_map(std::result::Result::ok)
-            .filter_map(|(id, name, settings_config, created_at)| {
-                Self::parse_provider_config(&id, &name, &settings_config, created_at).ok()
+            .filter_map(|(id, name, settings_config)| {
+                Self::parse_provider_config(&id, &name, &settings_config).ok()
             })
             .collect();
 
         Ok(profiles)
     }
 
-    fn parse_provider_config(
-        _id: &str,
-        name: &str,
-        settings_config: &str,
-        created_at_ms: i64,
-    ) -> Result<Profile> {
+    fn parse_provider_config(_id: &str, name: &str, settings_config: &str) -> Result<Profile> {
         #[derive(Deserialize)]
         struct ProviderConfig {
             #[serde(rename = "env")]
@@ -93,18 +86,11 @@ impl CcSwitchDb {
             Error::CcSwitchReadError(format!("Failed to parse settings_config: {e}"))
         })?;
 
-        // Convert Unix timestamp in milliseconds to DateTime
-        let created_at_dt = DateTime::from_timestamp_millis(created_at_ms).unwrap_or_else(Utc::now);
-
-        // Keep original name for display_name before transformation
-        let original_name = name.to_string();
-
         // Replace spaces with underscores in profile name
         let name = name.replace(' ', "_");
 
         Ok(Profile {
             name,
-            display_name: Some(original_name),
             env: config.env.unwrap_or_default(),
             permissions: config.permissions.unwrap_or_default(),
             enabled_plugins: config.enabled_plugins,
@@ -112,8 +98,6 @@ impl CcSwitchDb {
             api_timeout_ms: config.api_timeout_ms,
             category: None,
             source: Some(ProfileSource::CcSwitch),
-            created_at: created_at_dt,
-            updated_at: created_at_dt,
         })
     }
 }
