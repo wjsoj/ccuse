@@ -14,8 +14,22 @@ pub fn use_profile(name: &str, bypass: bool, args: &[String]) -> Result<()> {
         .get_profile(name)?
         .ok_or_else(|| crate::error::Error::ProfileNotFound(name.into()))?;
 
+    // Process args to extract -b flag and convert to --dangerously-skip-permissions
+    let mut actual_bypass = bypass;
+    let mut filtered_args = Vec::new();
+
+    for arg in args {
+        if arg == "-b" {
+            actual_bypass = true;
+            // Add the proper Claude Code flag
+            filtered_args.push("--dangerously-skip-permissions".to_string());
+        } else {
+            filtered_args.push(arg.clone());
+        }
+    }
+
     println!("Using profile: {}", profile.name);
-    Launcher::launch(&profile, bypass, args)?;
+    Launcher::launch(&profile, actual_bypass, &filtered_args)?;
 
     Ok(())
 }
@@ -32,8 +46,22 @@ pub fn usehappy_profile(name: &str, bypass: bool, args: &[String]) -> Result<()>
         .get_profile(name)?
         .ok_or_else(|| crate::error::Error::ProfileNotFound(name.into()))?;
 
+    // Process args to extract -b flag and convert to --dangerously-skip-permissions
+    let mut actual_bypass = bypass;
+    let mut filtered_args = Vec::new();
+
+    for arg in args {
+        if arg == "-b" {
+            actual_bypass = true;
+            // Add the proper Happy flag
+            filtered_args.push("--dangerously-skip-permissions".to_string());
+        } else {
+            filtered_args.push(arg.clone());
+        }
+    }
+
     println!("Using profile (Happy): {}", profile.name);
-    Launcher::launch_happy(&profile, bypass, args)?;
+    Launcher::launch_happy(&profile, actual_bypass, &filtered_args)?;
 
     Ok(())
 }

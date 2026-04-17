@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "ccuse")]
+#[command(version)]
 #[command(about = "Manage and switch Claude Code configurations", long_about = None)]
 pub struct Args {
     #[command(subcommand)]
@@ -19,10 +20,10 @@ pub enum Commands {
         name: String,
 
         /// Skip permissions check (equivalent to --dangerously-skip-permissions)
-        #[arg(short = 'b', long = "bypass", global = false)]
+        #[arg(long = "bypass", global = false)]
         bypass: bool,
 
-        /// Additional arguments to pass to Claude Code
+        /// Additional arguments to pass to Claude Code (use -b for bypass, -c for chat mode)
         #[arg(allow_hyphen_values = true)]
         args: Vec<String>,
     },
@@ -74,10 +75,10 @@ pub enum Commands {
         name: String,
 
         /// Skip permissions check (equivalent to --dangerously-skip-permissions)
-        #[arg(short = 'b', long = "bypass", global = false)]
+        #[arg(long = "bypass", global = false)]
         bypass: bool,
 
-        /// Additional arguments to pass to Happy
+        /// Additional arguments to pass to Happy (use -b for bypass)
         #[arg(allow_hyphen_values = true)]
         args: Vec<String>,
     },
