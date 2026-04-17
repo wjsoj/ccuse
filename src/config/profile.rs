@@ -4,7 +4,9 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Profile {
     pub name: String,
+    #[serde(default)]
     pub env: HashMap<String, String>,
+    #[serde(default)]
     pub permissions: Permissions,
     pub enabled_plugins: Option<HashMap<String, bool>>,
     pub always_thinking_enabled: Option<bool>,
